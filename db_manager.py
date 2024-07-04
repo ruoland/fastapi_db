@@ -97,7 +97,6 @@ def process_directory(directory_path):
             if file.endswith('.json'):
                 file_path = os.path.join(root, file)
                 process_file(file_path)
-
 def load(filepath):
     # 지정된 디렉토리의 모든 JSON 파일을 불러오기
     process_directory(filepath)

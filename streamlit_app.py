@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 API_KEY = "D/spYGY15giVS64SLvtShZlNHxAbr9eDi1uU1Ca1wrqCiU+0YMwcnFy53naflVlg5wemikAYwiugNoIepbpexQ=="
 API_URL = "https://api.odcloud.kr/api/15069932/v1/uddi:3799441a-4012-4caa-9955-b4d20697b555"
 
-legal_terms_dict = {}
+legal_terms_dict = {}x
 CACHE_FILE = "legal_terms_cache.json"
 
 # 법률 용어 가져오기 함수
@@ -129,7 +129,7 @@ def main():
             similarities = cosine_similarity(user_vector, filtered_tfidf_matrix)
             most_similar_idx = similarities.argmax()
             case = filtered_cases[most_similar_idx]
-             
+
             logging.info("법률 용어 하이라이트 처리 중")
             st.subheader("검색 결과")
             st.markdown(f"**판례 번호:** {case.id}")
