@@ -60,42 +60,34 @@ def get_legal_terms() -> dict:
 
 def download_db():
     file_id = "1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm"
-    output = "legal_cases.db" # 저장 위치 및 저장할 파일 이름
-    gdown.download(id=file_id, output=output, quiet=False)
+    output = "legal_cases.db"
+    try:
+        gdown.download(id=file_id, output=output, quiet=False)
+        st.success("데이터베이스 다운로드 완료!")
+        logging.info(f"데이터베이스 파일 크기: {os.path.getsize(output)} bytes")
+    except Exception as e:
+        st.error(f"데이터베이스 다운로드 실패: {str(e)}")
+        logging.error(f"데이터베이스 다운로드 오류: {str(e)}")
 
 def check_db(session):
-    inspector = inspect(engine)
-    table_name = 'cases'
     try:
-        for table_name in inspector.get_table_names():
-            # 테이블에서 첫 번째 행을 선택하는 쿼리
-            stmt = select(text('1')).select_from(text(table_name)).limit(1)
-            result = session.execute(stmt)
-            if result.first():
-                return True  # 데이터가 있음
-        download_db()
-        return False  # 모든 테이블이 비어있음
-    finally:
-        session.close()
-        
-@st.cache_resource
-def load_cases() -> List[Case]:
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-
-    logging.info("데이터베이스에서 판례 데이터 로딩 시작")
-    try:
-        total_cases = session.query(Case).count()
-        logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
-        
-        cases = list(session.query(Case))
-        logging.info(f"총 {len(cases)}개의 판례를 로드했습니다.")
-        return cases
-
+        result = session.execute(text("SELECT COUNT(*) FROM cases"))
+        count = result.scalar()
+        logging.info(f"데이터베이스에 {count}개의 레코드가 있습니다.")
+        return count > 0
     except Exception as e:
-        logging.error(f"데이터 로드 중 오류 발생: {str(e)}")
-        return []
+        logging.error(f"데이터베이스 확인 중 오류 발생: {str(e)}")
+        return False
+        
+def check_db(session):
+    try:
+        result = session.execute(text("SELECT COUNT(*) FROM cases"))
+        count = result.scalar()
+        logging.info(f"데이터베이스에 {count}개의 레코드가 있습니다.")
+        return count > 0
+    except Exception as e:
+        logging.error(f"데이터베이스 확인 중 오류 발생: {str(e)}")
+        return False
 
     finally:
         session.close()
