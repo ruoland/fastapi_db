@@ -117,7 +117,7 @@ def show_main_page():
     st.title("AI 기반 맞춤형 판례 검색 서비스")
     st.write("당신의 상황에 가장 적합한 판례를 찾아드립니다")
 
-    st.image("https://via.placeholder.com/200", width=200)
+    st.image("static/photo.png", width=200)
 
     if st.button("바로 시작"):
         st.session_state.page = "search"
