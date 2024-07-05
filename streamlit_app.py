@@ -2,6 +2,7 @@ import streamlit as st
 st.set_page_config(page_title="AI 기반 맞춤형 판례 검색 서비스", layout="wide")
 
 import requests
+from sqlalchemy import inspect
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import sessionmaker
@@ -11,6 +12,7 @@ import logging
 import json
 import os
 from typing import List, Tuple
+import gdown
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -56,6 +58,14 @@ def get_legal_terms() -> dict:
     
     return legal_terms_dict
 
+def download_db():
+    file_id = "1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm"
+    output = "legal_cases.db" # 저장 위치 및 저장할 파일 이름
+    gdown.download(id=file_id, output=output, quiet=False)
+
+def check_db(session):
+    inspector = inspect(engine)
+    download_db()
 @st.cache_resource
 def load_cases() -> List[Case]:
     Base.metadata.bind = engine
@@ -67,7 +77,7 @@ def load_cases() -> List[Case]:
     try:
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
-
+        
         cases = list(session.query(Case))
         logging.info(f"총 {len(cases)}개의 판례를 로드했습니다.")
         return cases
