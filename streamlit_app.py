@@ -13,7 +13,6 @@ import json
 import os
 from typing import List, Tuple
 import gdown
-import sqlite3
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -63,12 +62,8 @@ def download_db():
     file_id = "1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm"
     output = "legal_cases.db" # 저장 위치 및 저장할 파일 이름
     gdown.download(id=file_id, output=output, quiet=False)
-    if os.path.exists(output) and os.path.getsize(output) > 0:
-        st.success("Database downloaded successfully")
-        return True
-    else:
-        st.error("Failed to download database")
-        return False
+    logging.info("다운로드를 완료했습니다 파일 용량:", get_file_size(file_path))
+
 def check_db(session):
     inspector = inspect(engine)
     table_name = 'cases'
@@ -89,9 +84,10 @@ def load_cases() -> List[Case]:
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-
     logging.info("데이터베이스에서 판례 데이터 로딩 시작")
     try:
+        
+
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
         
@@ -105,24 +101,55 @@ def load_cases() -> List[Case]:
 
     finally:
         session.close()
+def get_file_size(file_path):
+    # 파일 크기를 바이트 단위로 가져옴
+    size_in_bytes = os.path.getsize(file_path)
+    
+    # 크기를 읽기 쉬운 형식으로 변환
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_in_bytes < 1024.0:
+            break
+        size_in_bytes /= 1024.0
+    
+    return f"{size_in_bytes:.2f} {unit}"
 
+# 사용 예
+file_path = "legal_cases.db"  # 여기에 실제 파일 경로를 입력하세요
 @st.cache_resource
 def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
     inspector = inspect(engine)
     exists = inspector.has_table('cases')
-    print(exists, '존재?')
     
-    if exists == False :
-        download_db()
-        st.write("잠시만 기다려 주세요. DB를 불러오고 있습니다.")
-
+    if not exists:
         logging.info("데이터베이스 다운로드 시작")
-    exists = inspector.has_table('cases')
-    print(exists, '다운로드 끝')
-    cases = load_cases()
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
-    return vectorizer, tfidf_matrix, cases
+        st.warning("잠시만 기다려 주세요. DB를 다운로드 하고 있습니다.")
+        download_db()
+        exists = inspector.has_table('cases')
+
+    file_size = get_file_size(file_path)
+    logging.info(f"File size: {file_size}")
+
+    if exists:
+        logging.info(f'테이블이 존재합니다. 다운로드 완료.')
+        cases = load_cases()
+        if not cases:
+            st.error("데이터베이스에서 케이스를 로드하지 못했습니다.")
+            return None, None, None
+        
+        vectorizer = TfidfVectorizer()
+        valid_summaries = [case.summary for case in cases if case.summary]
+        if not valid_summaries:
+            st.error("유효한 요약이 없습니다.")
+            return None, None, None
+        
+        tfidf_matrix = vectorizer.fit_transform(valid_summaries)
+        return vectorizer, tfidf_matrix, cases
+    else:
+        if os.path.getsize(file_path) > 0:
+            st.error('다운로드에는 성공했지만, 어떤 이유로 DB에서 데이터를 불러올 수 없었습니다. 파일 용량: ' + get_file_size(file_path))
+        else:
+            st.error('다운로드에 실패한 것처럼 보입니다. DB 파일의 용량이 0입니다. 파일 용량: ' + get_file_size(file_path))
+        return None, None, None
 
 def local_css():
     st.markdown("""
