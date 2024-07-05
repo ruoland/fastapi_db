@@ -3,4 +3,4 @@ Requests==2.32.3
 scikit_learn==1.5.1
 soynlp==0.0.493
 SQLAlchemy==2.0.31
-gdown
+gdown==5.2.0
