@@ -1,21 +1,19 @@
 import streamlit as st
-st.set_page_config(page_title="AI 기반 맞춤형 판례 검색 서비스", layout="wide")
-
 import requests
-from sqlalchemy import inspect, text, select
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sqlalchemy.orm import sessionmaker
-from db_manager import Base, Case, engine
 import re
 import logging
 import json
 import os
 from typing import List, Tuple
-import gdown
+from db_manager import Case, download_db, get_file_size, load_cases
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Streamlit 페이지 설정
+st.set_page_config(page_title="AI 기반 맞춤형 판례 검색 서비스", layout="wide")
 
 # API 설정
 API_KEY = "D/spYGY15giVS64SLvtShZlNHxAbr9eDi1uU1Ca1wrqCiU+0YMwcnFy53naflVlg5wemikAYwiugNoIepbpexQ=="
@@ -58,86 +56,30 @@ def get_legal_terms() -> dict:
     
     return legal_terms_dict
 
-def download_db():
-    file_id = "1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm"
-    output = "legal_cases.db" # 저장 위치 및 저장할 파일 이름
-    gdown.download(id=file_id, output=output, quiet=False)
-
-def check_db(session):
-    inspector = inspect(engine)
-    table_name = 'cases'
-    try:
-        for table_name in inspector.get_table_names():
-            # 테이블에서 첫 번째 행을 선택하는 쿼리
-            stmt = select(text('1')).select_from(text(table_name)).limit(1)
-            result = session.execute(stmt)
-            if result.first():
-                return True  # 데이터가 있음
-        download_db()
-        return False  # 모든 테이블이 비어있음
-    finally:
-        session.close()
-        
-@st.cache_resource
-def load_cases() -> List[Case]:
-    Base.metadata.bind = engine
-    DBSession = sessionmaker(bind=engine)
-    session = DBSession()
-
-    logging.info("데이터베이스에서 판례 데이터 로딩 시작")
-    try:
-        total_cases = session.query(Case).count()
-        logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
-        
-        cases = list(session.query(Case))
-        logging.info(f"총 {len(cases)}개의 판례를 로드했습니다.")
-        return cases
-
-    except Exception as e:
-        logging.error(f"데이터 로드 중 오류 발생: {str(e)}")
-        return []
-
-    finally:
-        session.close()
-def get_file_size(file_path):
-    # 파일 크기를 바이트 단위로 가져옴
-    size_in_bytes = os.path.getsize(file_path)
-    
-    # 크기를 읽기 쉬운 형식으로 변환
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size_in_bytes < 1024.0:
-            break
-        size_in_bytes /= 1024.0
-    
-    return f"{size_in_bytes:.2f} {unit}"
-
-# 사용 예
-file_path = "legal_cases.db"  # 여기에 실제 파일 경로를 입력하세요
-
 @st.cache_resource
 def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
-    inspector = inspect(engine)
-    exists = inspector.has_table('cases')
-    print(exists, '존재?')
-    
-    if exists == False :
+    db_path = "legal_cases.db"
+    if not os.path.exists(db_path):
         logging.info("데이터베이스 다운로드 시작")
         st.write("잠시만 기다려 주세요. DB를 다운로드 하고 있습니다.")
         download_db()
-
-    exists = inspector.has_table('cases')
-    file_size = get_file_size(file_path)
-    print(f"File size: {file_size}")
-    if exists :
-        print(f'테이블이 존재하는지 여부 {exists}다운로드 끝')
+    
+    if os.path.exists(db_path):
+        file_size = get_file_size(db_path)
+        logging.info(f"DB 파일 크기: {file_size}")
+        
         cases = load_cases()
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
-        return vectorizer, tfidf_matrix, cases
-    else : 
-        st.write('DB에 여전히 데이터가 존재하지 않습니다. ', get_file_size(file_path))
-        file_size = get_file_size(file_path)
-        print(f"File size: {file_size}")
+        if cases:
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
+            return vectorizer, tfidf_matrix, cases
+        else:
+            st.error("DB에서 데이터를 불러올 수 없습니다.")
+            return None, None, None
+    else:
+        st.error("DB 파일이 존재하지 않습니다.")
+        return None, None, None
+
 def local_css():
     st.markdown("""
     <style>
@@ -222,7 +164,11 @@ def show_result_page():
     selected_fields = st.session_state.selected_fields
 
     with st.spinner('판례를 검색 중입니다...'):
-        vectorizer, tfidf_matrix, cases = get_vectorizer_and_matrix()
+        result = get_vectorizer_and_matrix()
+        if result is None or None in result:
+            st.error("데이터를 불러오는 데 실패했습니다.")
+            return
+        vectorizer, tfidf_matrix, cases = result
 
         if not selected_fields or '잘모르겠습니다' in selected_fields:
             filtered_cases = cases
