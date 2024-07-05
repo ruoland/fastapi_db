@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from db_manager import Base, Case, engine  # your_models.py에서 정의한 모델을 import
 import re
 import logging
-import json
+# import json
 import os
 
 app = Flask(__name__)
