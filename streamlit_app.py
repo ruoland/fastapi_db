@@ -24,8 +24,8 @@ API_URL = "https://api.odcloud.kr/api/15069932/v1/uddi:3799441a-4012-4caa-9955-b
 CACHE_FILE = "legal_terms_cache.json"
 DB_NAME = 'legal_cases.db'
 
-def download_db_from_gdrive(DB_NAME):
-    if not os.path.exists(DB_NAME):
+def download_db_from_gdrive(DB_NAME, force):
+    if not os.path.exists(DB_NAME) or force:
         st.info("판례 데이터베이스 파일을 찾을 수 없습니다. 다운로드 합니다...")
         url = f'https://drive.google.com/file/d/1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm/view?usp=drive_link'
         gdown.download(url, DB_NAME, quiet=False)
@@ -78,7 +78,8 @@ def load_cases() -> List[Case]:
     try:
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
-
+        if total_cases == 0: 
+            download_db_from_gdrive('legal_cases.db')
         cases = list(session.query(Case))
         logging.info(f"총 {len(cases)}개의 판례를 로드했습니다.")
         return cases
