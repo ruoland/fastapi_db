@@ -2,7 +2,7 @@ import streamlit as st
 st.set_page_config(page_title="AI 기반 맞춤형 판례 검색 서비스", layout="wide")
 
 import requests
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text, select
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +13,7 @@ import json
 import os
 from typing import List, Tuple
 import gdown
+import sqlite3
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -65,13 +66,19 @@ def download_db():
 
 def check_db(session):
     inspector = inspect(engine)
-
-
-    for table_name in inspector.get_table_names():
-        if session.query(f"SELECT 1 FROM {table_name}", 'cases').first():
-            session.close()
-            return True  # 데이터가 있음
-    download_db()
+    table_name = 'cases'
+    try:
+        for table_name in inspector.get_table_names():
+            # 테이블에서 첫 번째 행을 선택하는 쿼리
+            stmt = select(text('1')).select_from(text(table_name)).limit(1)
+            result = session.execute(stmt)
+            if result.first():
+                return True  # 데이터가 있음
+        download_db()
+        return False  # 모든 테이블이 비어있음
+    finally:
+        session.close()
+        
 @st.cache_resource
 def load_cases() -> List[Case]:
     Base.metadata.bind = engine
@@ -79,10 +86,11 @@ def load_cases() -> List[Case]:
     session = DBSession()
 
     logging.info("데이터베이스에서 판례 데이터 로딩 시작")
-    print(check_db(session))
+    
 
     try:
-        print(check_db(session))
+        
+        
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
         
@@ -99,9 +107,17 @@ def load_cases() -> List[Case]:
 
 @st.cache_resource
 def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
+    inspector = inspect(engine)
+    exists = inspector.has_table('cases')
+    print(exists, '존재?')
+    
+    if exists == False :
+        download_db()
+        st.write("잠시만 기다려 주세요. DB를 불러오고 있습니다.")
+
+        logging.info("데이터베이스 다운로드 시작")
     cases = load_cases()
     vectorizer = TfidfVectorizer()
-    print(cases)
     tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
     return vectorizer, tfidf_matrix, cases
 
