@@ -56,6 +56,7 @@ def get_legal_terms() -> dict:
     
     return legal_terms_dict
 
+
 @st.cache_resource
 def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
     db_path = "legal_cases.db"
