@@ -25,7 +25,7 @@ CACHE_FILE = "legal_terms_cache.json"
 @st.cache_data
 def get_legal_terms() -> dict:
     if os.path.exists(CACHE_FILE):
-        logging.info("저장된 용어 사전 불러오기")
+        logging.info("저장된 용어 불러오기")
         with open(CACHE_FILE, 'r', encoding='utf-8') as f:
             legal_terms_dict = json.load(f)
         logging.info(f"{len(legal_terms_dict)}개의 법률 용어를 캐시에서 불러왔습니다.")
