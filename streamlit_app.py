@@ -63,7 +63,12 @@ def download_db():
     file_id = "1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm"
     output = "legal_cases.db" # 저장 위치 및 저장할 파일 이름
     gdown.download(id=file_id, output=output, quiet=False)
-
+    if os.path.exists(output) and os.path.getsize(output) > 0:
+        st.success("Database downloaded successfully")
+        return True
+    else:
+        st.error("Failed to download database")
+        return False
 def check_db(session):
     inspector = inspect(engine)
     table_name = 'cases'
@@ -85,7 +90,7 @@ def load_cases() -> List[Case]:
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
 
-    logging.info("데이터베이스에서 판례 데이터 로딩 시작", session.query(Case))
+    logging.info("데이터베이스에서 판례 데이터 로딩 시작")
     try:
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
