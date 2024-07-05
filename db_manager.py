@@ -1,8 +1,9 @@
 import json
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 
 Base = declarative_base()
 
@@ -47,6 +48,15 @@ Base.metadata.create_all(engine)
 SessionMaker = sessionmaker(bind=engine)
 session = SessionMaker()
 
+def load_data_from_db(db_name):
+    engine = create_engine(f'sqlite:///{db_name}')
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT * FROM your_table_name"))
+            data = result.fetchall()
+        return data
+    except SQLAlchemyError as e:
+        return None
 def process_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
@@ -75,6 +85,7 @@ def process_file(file_path):
         
         session.add(case)
         
+        #jdgmnInfo는 다른 데이터로서
         for judgment_info in data['jdgmnInfo']:
             judgment = JudgmentInfo(
                 case_id=case.id,

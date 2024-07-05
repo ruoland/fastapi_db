@@ -6,6 +6,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import sessionmaker
 from db_manager import Base, Case, engine
+import db_manager as manager
 import re
 import logging
 import json
@@ -21,13 +22,13 @@ API_URL = "https://api.odcloud.kr/api/15069932/v1/uddi:3799441a-4012-4caa-9955-b
 
 # 법률 용어 사전
 CACHE_FILE = "legal_terms_cache.json"
+DB_NAME = 'legal_cases.db'
 
-
-def download_db_from_gdrive(output_name):
-    if not os.path.exists(output_name):
+def download_db_from_gdrive(DB_NAME):
+    if not os.path.exists(DB_NAME):
         st.info("판례 데이터베이스 파일을 찾을 수 없습니다. 다운로드 합니다...")
         url = f'https://drive.google.com/file/d/1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm/view?usp=drive_link'
-        gdown.download(url, output_name, quiet=False)
+        gdown.download(url, DB_NAME, quiet=False)
         st.success("데이터베이스가 다운로드 되었습니다!")
     else:
         st.info("데이터베이스 파일이 이미 존재합니다, 좋은 하루 되세요.")
@@ -71,7 +72,7 @@ def load_cases() -> List[Case]:
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-
+    manager.load_data_from_db(DB_NAME)
     logging.info("데이터베이스에서 판례 데이터 로딩 시작")
 
     try:
