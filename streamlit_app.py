@@ -116,6 +116,8 @@ def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
         st.write("잠시만 기다려 주세요. DB를 불러오고 있습니다.")
 
         logging.info("데이터베이스 다운로드 시작")
+    exists = inspector.has_table('cases')
+    print(exists, '다운로드 끝')
     cases = load_cases()
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
