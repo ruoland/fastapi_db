@@ -11,7 +11,7 @@ import logging
 import json
 import os
 from typing import List, Tuple
-
+import gdown
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -21,6 +21,16 @@ API_URL = "https://api.odcloud.kr/api/15069932/v1/uddi:3799441a-4012-4caa-9955-b
 
 # 법률 용어 사전
 CACHE_FILE = "legal_terms_cache.json"
+
+
+def download_db_from_gdrive(file_id, output_name):
+    if not os.path.exists(output_name):
+        st.info("판례 데이터베이스 파일을 찾을 수 없습니다. 다운로드 합니다...")
+        url = f'https://drive.google.com/file/d/1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm/view?usp=drive_link'
+        gdown.download(url, output_name, quiet=False)
+        st.success("데이터베이스가 다운로드 되었습니다!")
+    else:
+        st.info("데이터베이스 파일이 이미 존재합니다, 좋은 하루 되세요.")
 
 @st.cache_data
 def get_legal_terms() -> dict:
@@ -115,6 +125,9 @@ def highlight_legal_terms(text: str) -> str:
 
 def show_main_page():
     st.title("AI 기반 맞춤형 판례 검색 서비스")
+    file_id = '1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm'  # 구글 드라이브 파일 ID로 변경하세요
+    db_name = 'legal_cases.db'
+    download_db_from_gdrive(file_id, db_name)
     st.write("당신의 상황에 가장 적합한 판례를 찾아드립니다")
 
     st.image("static/photo.png", width=200)
