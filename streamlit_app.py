@@ -79,7 +79,7 @@ def load_cases() -> List[Case]:
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
         if total_cases == 0: 
-            download_db_from_gdrive('legal_cases.db')
+            download_db_from_gdrive('legal_cases.db', True)
         cases = list(session.query(Case))
         logging.info(f"총 {len(cases)}개의 판례를 로드했습니다.")
         return cases
@@ -129,7 +129,7 @@ def show_main_page():
     st.title("AI 기반 맞춤형 판례 검색 서비스")
     file_id = '1rBTbbtBE5K5VgiuTvt3JgneuJ8odqCJm'  # 구글 드라이브 파일 ID로 변경하세요
     db_name = 'legal_cases.db'
-    download_db_from_gdrive(db_name)
+    download_db_from_gdrive(db_name, False)
     st.write("당신의 상황에 가장 적합한 판례를 찾아드립니다")
 
     st.image("static/photo.png", width=200)
