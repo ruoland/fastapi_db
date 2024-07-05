@@ -65,6 +65,12 @@ def download_db():
 
 def check_db(session):
     inspector = inspect(engine)
+
+
+    for table_name in inspector.get_table_names():
+        if session.query(f"SELECT 1 FROM {table_name}", 'cases').first():
+            session.close()
+            return True  # 데이터가 있음
     download_db()
 @st.cache_resource
 def load_cases() -> List[Case]:
@@ -73,8 +79,10 @@ def load_cases() -> List[Case]:
     session = DBSession()
 
     logging.info("데이터베이스에서 판례 데이터 로딩 시작")
+    print(check_db(session))
 
     try:
+        print(check_db(session))
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
         
@@ -93,6 +101,7 @@ def load_cases() -> List[Case]:
 def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
     cases = load_cases()
     vectorizer = TfidfVectorizer()
+    print(cases)
     tfidf_matrix = vectorizer.fit_transform([case.summary for case in cases if case.summary])
     return vectorizer, tfidf_matrix, cases
 
