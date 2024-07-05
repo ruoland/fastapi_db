@@ -127,8 +127,8 @@ def get_vectorizer_and_matrix() -> Tuple[TfidfVectorizer, any, List[Case]]:
         exists = inspector.has_table('cases')
 
     file_size = get_file_size(file_path)
-    logging.info(f"File size: {file_size}")
-
+    logging.info(f"다운로드 완료, File size: {file_size}")
+    
     if exists:
         logging.info(f'테이블이 존재합니다. 다운로드 완료.')
         cases = load_cases()
