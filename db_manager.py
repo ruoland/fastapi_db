@@ -4,7 +4,6 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-
 Base = declarative_base()
 
 #테이블을 구현하는 클래스입니다
@@ -43,13 +42,12 @@ class JudgmentInfo(Base):
     answer = Column(String)
 
 # 데이터베이스 생성 설정
-engine = create_engine('sqlite:///legal_cases.db')
-Base.metadata.create_all(engine)
+engine = create_engine(f'sqlite:///legal_cases.db')
 SessionMaker = sessionmaker(bind=engine)
 session = SessionMaker()
 
 def load_data_from_db(db_name):
-    engine = create_engine(f'sqlite:///{db_name}')
+    Base.metadata.create_all(engine)
     try:
         with engine.connect() as connection:
             result = connection.execute(text("SELECT * FROM your_table_name"))
