@@ -80,9 +80,7 @@ def process_file(file_path):
             class_name=data['Class_info']['class_name'],
             instance_name=data['Class_info']['instance_name']
         )
-        
         session.add(case)
-        
         #jdgmnInfo는 다른 데이터로서
         for judgment_info in data['jdgmnInfo']:
             judgment = JudgmentInfo(
