@@ -85,12 +85,8 @@ def load_cases() -> List[Case]:
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
 
-    logging.info("데이터베이스에서 판례 데이터 로딩 시작")
-    
-
+    logging.info("데이터베이스에서 판례 데이터 로딩 시작", session.query(Case))
     try:
-        
-        
         total_cases = session.query(Case).count()
         logging.info(f"총 {total_cases}개의 판례가 데이터베이스에 있습니다.")
         
